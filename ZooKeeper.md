@@ -214,8 +214,8 @@ server.3=127.0.0.1:2190:3190
    server.3=127.0.0.1:2190:3190
 
    3. 修改zk3.cnf
-   clientPort=2182
-   dataDir=/usr/local/var/run/zookeeper/data/zk2
+   clientPort=2183
+   dataDir=/usr/local/var/run/zookeeper/data/zk3
    
    server.1=127.0.0.1:2188:3188
    server.2=127.0.0.1:2189:3189
