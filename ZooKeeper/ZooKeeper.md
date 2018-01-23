@@ -224,9 +224,9 @@ server.3=127.0.0.1:2190:3190
  
    
 3. 启动
-    zkServer stop /usr/local/etc/zookeeper/zk1.cfg
-    zkServer stop /usr/local/etc/zookeeper/zk2.cfg
-    zkServer stop /usr/local/etc/zookeeper/zk3.cfg
+    zkServer start /usr/local/etc/zookeeper/zk1.cfg
+    zkServer start /usr/local/etc/zookeeper/zk2.cfg
+    zkServer start /usr/local/etc/zookeeper/zk3.cfg
  
 4. 检测是否启动成功
    ShaoGaoJie@ShaodeMacBook-Pro /u/l/e/zookeeper> telnet 127.0.0.1 2181

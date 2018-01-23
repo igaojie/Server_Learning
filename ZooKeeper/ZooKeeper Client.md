@@ -250,6 +250,9 @@ Node does not exist: /node_3
 ```
 
 ##### 顺序节点
+
+当创建znode的时候你还可以请求在路径的最后追加一个单调递增的计数器。这个计数器在父节点是唯一的。计数器有一个%010d --的格式，它是10位数用0做填充(计数器用这个方法格式化简化排序)，也就是：0000000001。查看Queue Recipe使用这个特性的例子。注释：计数器的序列号由父节点通过一个int类型维护，计数器当超过2147483647的时候将会溢出(-2147483647将会导致)。
+
 ```
 [zk: 127.0.0.1:2181(CONNECTED) 1] create  -s /node_3 123
 Created /node_30000000002
@@ -336,35 +339,53 @@ setquota
 val 含义随着上面的参数不同而不同
 path 节点路径
 
-// 设置/node_1节点最多有2个节点
-[zk: 127.0.0.1:2182(CONNECTED) 2] setquota -n 2 /node_1
-Comment: the parts are option -n val 2 path /node_1
+// 设置/node_2节点最多有2个节点
+[zk: 127.0.0.1:2182(CONNECTED) 39] create /node_2 123
+Created /node_2
+[zk: 127.0.0.1:2182(CONNECTED) 40] setquota -n 2 /node_
 
+node_1   node_2
+[zk: 127.0.0.1:2182(CONNECTED) 40] setquota -n 2 /node_2
+Comment: the parts are option -n val 2 path /node_2
+[zk: 127.0.0.1:2182(CONNECTED) 41] create /node_
 
-[zk: 127.0.0.1:2182(CONNECTED) 3] create /node_1/node_1_2 123
-Node already exists: /node_1/node_1_2
-[zk: 127.0.0.1:2182(CONNECTED) 4] create /node_1/node_1_3 123
-Created /node_1/node_1_3
-[zk: 127.0.0.1:2182(CONNECTED) 5] create /node_1/node_1_4 123
-Created /node_1/node_1_4
-[zk: 127.0.0.1:2182(CONNECTED) 6] ls /node_1
-[node_1_1, node_1_2, node_1_3, node_1_4]
-[zk: 127.0.0.1:2182(CONNECTED) 7] create /node_1/node_1_4/node_1_4_1 123
-Created /node_1/node_1_4/node_1_4_1
-
-[zk: 127.0.0.1:2182(CONNECTED) 8] ls /node_1
-[node_1_1, node_1_2, node_1_3, node_1_4]
-[zk: 127.0.0.1:2182(CONNECTED) 9]
-[zk: 127.0.0.1:2182(CONNECTED) 9]
-[zk: 127.0.0.1:2182(CONNECTED) 9]
+node_1   node_2
+[zk: 127.0.0.1:2182(CONNECTED) 41] create /node_2/node_2_1 123
+Created /node_2/node_2_1
+[zk: 127.0.0.1:2182(CONNECTED) 42] create /node_2/node_2_1 123
+Node already exists: /node_2/node_2_1
+[zk: 127.0.0.1:2182(CONNECTED) 43] create /node_2/node_2_2 123
+Created /node_2/node_2_2
+[zk: 127.0.0.1:2182(CONNECTED) 44] create /node_2/node_2_3 123
+Created /node_2/node_2_3
+[zk: 127.0.0.1:2182(CONNECTED) 45] create /node_2/node_2_4 123
+Created /node_2/node_2_4
+[zk: 127.0.0.1:2182(CONNECTED) 46]
 
 
 //查看配额信息 奇不奇怪？惊不惊喜？明明限制了配额，为什么还能创建子节点呢？ 仅仅在zookeeper.out里写了个预警而已。
-[zk: 127.0.0.1:2182(CONNECTED) 10] listquota /node_1
-absolute path is /zookeeper/quota/node_1/zookeeper_limits
-Output quota for /node_1 count=2,bytes=-1
-Output stat for /node_1 count=6,bytes=57
 
+// 我是brew install zookeeper的，日志文件在/usr/local/var/log/zookeeper/zookeeper.log 里。
+->tail -f /usr/local/var/log/zookeeper/zookeeper.log
+//个数有三个了 limit为2 仅仅提醒一下 
+2018-01-22 16:16:59 DataTree [WARN] Quota exceeded: /node_2 count=3 limit=2
+2018-01-22 16:16:59 DataTree [WARN] Quota exceeded: /node_2 count=3 limit=2
+2018-01-22 16:16:59 DataTree [WARN] Quota exceeded: /node_2 count=3 limit=2
+2018-01-22 16:17:01 DataTree [WARN] Quota exceeded: /node_2 count=4 limit=2
+2018-01-22 16:17:01 DataTree [WARN] Quota exceeded: /node_2 count=4 limit=2
+2018-01-22 16:17:01 DataTree [WARN] Quota exceeded: /node_2 count=4 limit=2
+2018-01-22 16:17:04 DataTree [WARN] Quota exceeded: /node_2 count=5 limit=2
+2018-01-22 16:17:04 DataTree [WARN] Quota exceeded: /node_2 count=5 limit=2
+2018-01-22 16:17:04 DataTree [WARN] Quota exceeded: /node_2 count=5 limit=2
+
+// 现在直接删掉/node_2节点 继续为/node_2新增节点 看看设么效果？
+//直接删掉节点 而没有删除配额信息，那么配额信息会一直存在，并且不能重新设置配额。否则会报错：Command failed: java.lang.IllegalArgumentException: /node_2 has a parent /zookeeper/quota/node_2 which has a quota
+
+//查看配额信息
+[zk: 127.0.0.1:2182(CONNECTED) 46] listquota /node_2
+absolute path is /zookeeper/quota/node_2/zookeeper_limits
+Output quota for /node_2 count=2,bytes=-1
+Output stat for /node_2 count=5,bytes=15
 
 
 [zk: 127.0.0.1:2182(CONNECTED) 13] ls2 /node_1
@@ -385,13 +406,7 @@ numChildren = 4
 
 
 // 删除配额限制
-[zk: 127.0.0.1:2182(CONNECTED) 0] delquota -n /node_
-
-node_1             node_30000000005   node_40000000003   node_30000000006
 [zk: 127.0.0.1:2182(CONNECTED) 0] delquota -n /node_1
-[zk: 127.0.0.1:2182(CONNECTED) 1] listquota /node_
-
-node_1             node_30000000005   node_40000000003   node_30000000006
 [zk: 127.0.0.1:2182(CONNECTED) 1] listquota /node_1
 absolute path is /zookeeper/quota/node_1/zookeeper_limits
 Output quota for /node_1 count=-1,bytes=-1
@@ -420,3 +435,37 @@ Command index out of range
 [zk: 127.0.0.1:2182(CONNECTED) 6]
 
 ```
+### watch 
+```
+// 为/node_2添加监视 如果有
+[zk: 127.0.0.1:2182(CONNECTED) 5] ls /node_2 true
+[a_20000000009, a_20000000008, a_20000000019, a_20000000016, a_20000000015, a_20000000007, a_20000000018, a_20000000006, a_20000000017, a_20000000012, a_20000000011, a_20000000014, a_20000000013, a_20000000010, a_20000000020, node_2_1, node_2_18, node_2_2, node_2_3, node_2_4, node_2_5]
+[zk: 127.0.0.1:2182(CONNECTED) 6]
+WATCHER::
+
+WatchedEvent state:SyncConnected type:NodeChildrenChanged path:/node_2
+
+```
+
+## 客户端
+### java
+```
+ZkClient
+
+Curator
+```
+
+## PHP_SWOOLE安装
+```
+brew info homebrew/php/php56-zookeeper
+
+```
+
+### 场景分析
+#### 1. master 选举
+
+#### 2. 数据的发布与订阅
+#### 3. 负载均衡
+
+
+# ETCD
