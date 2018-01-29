@@ -447,6 +447,116 @@ WatchedEvent state:SyncConnected type:NodeChildrenChanged path:/node_2
 
 ```
 
+### Acl权限控制
+```
+传统的文件系统中，ACL分为两个维度，一个是属组，一个是权限，子目录/文件默认继承父目录的ACL。而在Zookeeper中，node的ACL是没有继承关系的，是独立控制的。Zookeeper的ACL，可以从三个维度来理解：一是scheme; 二是user; 三是permission，通常表示为scheme:id:permissions, 下面从这三个方面分别来介绍：
+1.（1）scheme: scheme对应于采用哪种方案来进行权限管理，zookeeper实现了一个pluggable的ACL方案，可以通过扩展scheme，来扩展ACL的机制。zookeeper-3.4.4缺省支持下面几种scheme:
+
+world: 它下面只有一个id, 叫anyone, world:anyone代表任何人，zookeeper中对所有人有权限的结点就是属于world:anyone的
+auth: 它不需要id, 只要是通过authentication的user都有权限（zookeeper支持通过kerberos来进行authencation, 也支持username/password形式的authentication)
+digest: 它对应的id为username:BASE64(SHA1(password))，它需要先通过username:password形式的authentication
+ip: 它对应的id为客户机的IP地址，设置的时候可以设置一个ip段，比如ip:192.168.1.0/16, 表示匹配前16个bit的IP段
+super: 在这种scheme情况下，对应的id拥有超级权限，可以做任何事情(cdrwa)
+
+另外，zookeeper-3.4.4的代码中还提供了对sasl的支持，不过缺省是没有开启的，需要配置才能启用，具体怎么配置在下文中介绍。
+
+sasl: sasl的对应的id，是一个通过sasl authentication用户的id，zookeeper-3.4.4中的sasl authentication是通过kerberos来实现的，也就是说用户只有通过了kerberos认证，才能访问它有权限的node.
+（2）id: id与scheme是紧密相关的，具体的情况在上面介绍scheme的过程都已介绍，这里不再赘述。
+
+（3）permission: zookeeper目前支持下面一些权限：
+
+CREATE(c): 创建权限，可以在在当前node下创建child node
+DELETE(d): 删除权限，可以删除当前的node
+READ(r): 读权限，可以获取当前node的数据，可以list当前node所有的child nodes
+WRITE(w): 写权限，可以向当前node写数据
+ADMIN(a): 管理权限，可以设置当前node的permission
+```
+
+```
+//world：默认方式，相当于全世界都能访问
+[zk: 127.0.0.1:2182(CONNECTED) 26] create /aaa abc
+Created /aaa
+[zk: 127.0.0.1:2182(CONNECTED) 27] getAcl /aaa
+'world,'anyone
+: cdrwa
+
+
+//创建节点 /a
+[zk: 127.0.0.1:2182(CONNECTED) 13] create /a data
+Created /a
+// 为/a节点设置权限
+// ip：使用Ip地址认证
+[zk: 127.0.0.1:2182(CONNECTED) 14] setAcl /a ip:127.0.0.1:cdrw
+cZxid = 0x300000128
+ctime = Fri Jan 26 11:17:12 CST 2018
+mZxid = 0x300000128
+mtime = Fri Jan 26 11:17:12 CST 2018
+pZxid = 0x300000128
+cversion = 0
+dataVersion = 0
+aclVersion = 1
+ephemeralOwner = 0x0
+dataLength = 4
+numChildren = 0
+//获取 /a 权限
+[zk: 127.0.0.1:2182(CONNECTED) 16] getAcl /a
+'ip,'127.0.0.1
+: cdrw
+[zk: 127.0.0.1:2182(CONNECTED) 17]
+
+
+//auth：代表已经认证通过的用户(cli中可以通过addauth digest user:pwd 来添加当前上下文中的授权用户)
+
+[zk: 127.0.0.1:2182(CONNECTED) 21] addauth digest a:123
+
+[zk: 127.0.0.1:2182(CONNECTED) 24] create /aa aa auth:a:123:r
+Created /aa
+[zk: 127.0.0.1:2182(CONNECTED) 25] getAcl /aa
+'digest,'a:BTiKABvL7rKsT7fa2hBWBjsdtLk=
+: r
+
+
+//digest: 它对应的id为username:BASE64(SHA1(password))，它需要先通过username:password形式的authentication
+ShaodeMacBook-Pro:~ ShaoGaoJie$ echo -n user1:pwd1 | openssl dgst -binary -sha1 | openssl base64
+a9l5yfb9zl8WCXjVmi5/XOC0Ep4=
+
+[zk: 127.0.0.1:2182(CONNECTED) 7] create /acl06 acl06
+Created /acl06
+
+[zk: 127.0.0.1:2182(CONNECTED) 8] setAcl /acl06 digest:user1:a9l5yfb9zl8WCXjVmi5/XOC0Ep4=:r
+cZxid = 0x30000013f
+ctime = Fri Jan 26 13:37:04 CST 2018
+mZxid = 0x30000013f
+mtime = Fri Jan 26 13:37:04 CST 2018
+pZxid = 0x30000013f
+cversion = 0
+dataVersion = 0
+aclVersion = 1
+ephemeralOwner = 0x0
+dataLength = 5
+numChildren = 0
+[zk: 127.0.0.1:2182(CONNECTED) 9]
+[zk: 127.0.0.1:2182(CONNECTED) 9]
+
+[zk: 127.0.0.1:2182(CONNECTED) 9] get /acl06
+Authentication is not valid : /acl06
+[zk: 127.0.0.1:2182(CONNECTED) 10] addauth digest user1:pwd1
+[zk: 127.0.0.1:2182(CONNECTED) 11] get /acl06       acl06
+cZxid = 0x30000013f
+ctime = Fri Jan 26 13:37:04 CST 2018
+mZxid = 0x30000013f
+mtime = Fri Jan 26 13:37:04 CST 2018
+pZxid = 0x30000013f
+cversion = 0
+dataVersion = 0
+aclVersion = 1
+ephemeralOwner = 0x0
+dataLength = 5
+numChildren = 0
+
+
+```
+
 ## 客户端
 ### java
 ```

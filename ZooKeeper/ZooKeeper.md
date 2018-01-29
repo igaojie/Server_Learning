@@ -338,3 +338,151 @@ zk_max_file_descriptor_count	10240
 ShaodeMacBook-Pro:~ ShaoGaoJie$
 ShaodeMacBook-Pro:~ ShaoGaoJie$
 ```
+
+
+## centos安装 ZooKeeper
+```
+[root@10.70.1.232 ~]#yum install zookeeper
+...
+...
+...
+Is this ok [y/N]: y
+Downloading Packages:
+Running rpm_check_debug
+ERROR with rpm_check_debug vs depsolve:
+libc.so.6(GLIBC_2.14)(64bit) is needed by xinsrv-libzookeeper-3.4.11-1.el7.centos.x86_64
+** Found 2 pre-existing rpmdb problem(s), 'yum check' output follows:
+mysql-devel-5.1.73-8.el6_8.x86_64 has missing requires of mysql = ('0', '5.1.73', '8.el6_8')
+mysql-server-5.1.73-8.el6_8.x86_64 has missing requires of mysql = ('0', '5.1.73', '8.el6_8')
+Your transaction was saved, rerun it with:
+ yum load-transaction /tmp/yum_save_tx-2018-01-29-10-20vl__ma.yumtx
+[root@10.70.1.232 ~]#
+
+//报错 
+libc.so.6(GLIBC_2.14)(64bit) is needed by xinsrv-libzookeeper-3.4.11-1.el7.centos.x86_64
+
+[root@10.70.1.232 ~]#yum info glibc
+Loaded plugins: fastestmirror, priorities
+Loading mirror speeds from cached hostfile
+ * base: ftp.sjtu.edu.cn
+ * epel: mirrors.ustc.edu.cn
+ * extras: ftp.sjtu.edu.cn
+ * updates: mirrors.tuna.tsinghua.edu.cn
+169 packages excluded due to repository priority protections
+Installed Packages
+Name        : glibc
+Arch        : i686
+Version     : 2.12 // ZooKeeper需要 2.14版本 而本机是2.12 所以报错了。
+Release     : 1.209.el6_9.2
+Size        : 13 M
+Repo        : installed
+From repo   : updates
+Summary     : The GNU libc libraries
+URL         : http://sources.redhat.com/glibc/
+License     : LGPLv2+ and LGPLv2+ with exceptions and GPLv2+
+Description : The glibc package contains standard libraries which are used by
+            : multiple programs on the system. In order to save disk space and
+            : memory, as well as to make upgrading easier, common system code is
+            : kept in one place and shared between programs. This particular package
+            : contains the most important sets of shared libraries: the standard C
+            : library and the standard math library. Without these two libraries, a
+            : Linux system will not function.
+
+Name        : glibc
+Arch        : x86_64
+Version     : 2.12
+Release     : 1.209.el6_9.2
+Size        : 13 M
+Repo        : installed
+From repo   : updates
+Summary     : The GNU libc libraries
+URL         : http://sources.redhat.com/glibc/
+License     : LGPLv2+ and LGPLv2+ with exceptions and GPLv2+
+Description : The glibc package contains standard libraries which are used by
+            : multiple programs on the system. In order to save disk space and
+            : memory, as well as to make upgrading easier, common system code is
+            : kept in one place and shared between programs. This particular package
+            : contains the most important sets of shared libraries: the standard C
+            : library and the standard math library. Without these two libraries, a
+            : Linux system will not function.
+
+[root@10.70.1.232 ~]#
+//系统版本
+[root@10.70.1.232 ~]#cat /etc/redhat-release
+CentOS release 6.7 (Final)
+
+//升级glibc 参考下边的[升级glibc]
+//继续 ZooKeeper安装
+
+[root@10.70.1.232 home]#yum install zookeeper
+....
+....
+....
+Installed:
+  xinsrv-libzookeeper.x86_64 0:3.4.11-1.el7.centos
+
+Complete!
+
+[root@10.70.1.232 home]#cd /data1/xinsrv/zookeeper/
+bin/                      conf/                     docs/                     lib/                      README_packaging.txt      src/                      zookeeper-3.4.8.jar.md5
+build.xml                 contrib/                  ivysettings.xml           LICENSE.txt               README.txt                zookeeper-3.4.8.jar       zookeeper-3.4.8.jar.sha1
+CHANGES.txt               dist-maven/               ivy.xml                   NOTICE.txt                recipes/                  zookeeper-3.4.8.jar.asc
+
+[root@10.70.1.232 home]#cd /data1/xinsrv/zookeeper/bin/
+README.txt    zkCleanup.sh  zkCli.cmd     zkCli.sh      zkEnv.cmd     zkEnv.sh      zkServer.cmd  zkServer.sh
+[root@10.70.1.232 home]#cd /data1/xinsrv/zookeeper/bin/zkServer.sh
+-bash: cd: /data1/xinsrv/zookeeper/bin/zkServer.sh: Not a directory
+[root@10.70.1.232 home]# /data1/xinsrv/zookeeper/bin/zkServer.sh
+ZooKeeper JMX enabled by default
+Using config: /data1/xinsrv/zookeeper/bin/../conf/zoo.cfg
+Usage: /data1/xinsrv/zookeeper/bin/zkServer.sh {start|start-foreground|stop|restart|status|upgrade|print-cmd}
+
+//启动ZooKeeper服务
+[root@10.70.1.232 home]# /data1/xinsrv/zookeeper/bin/zkServer.sh start
+ZooKeeper JMX enabled by default
+Using config: /data1/xinsrv/zookeeper/bin/../conf/zoo.cfg
+Starting zookeeper ... STARTED
+[root@10.70.1.232 home]#ps -ef | grep zookeeper.out
+root     30411  2403  0 11:28 pts/1    00:00:00 grep zookeeper.out
+[root@10.70.1.232 home]#ps -ef | grep zookeeper
+root     30394     1  5 11:28 pts/1    00:00:00 java -Dzookeeper.log.dir=. -Dzookeeper.root.logger=INFO,CONSOLE -cp /data1/xinsrv/zookeeper/bin/../build/classes:/data1/xinsrv/zookeeper/bin/../build/lib/*.jar:/data1/xinsrv/zookeeper/bin/../lib/slf4j-log4j12-1.6.1.jar:/data1/xinsrv/zookeeper/bin/../lib/slf4j-api-1.6.1.jar:/data1/xinsrv/zookeeper/bin/../lib/netty-3.7.0.Final.jar:/data1/xinsrv/zookeeper/bin/../lib/log4j-1.2.16.jar:/data1/xinsrv/zookeeper/bin/../lib/jline-0.9.94.jar:/data1/xinsrv/zookeeper/bin/../zookeeper-3.4.8.jar:/data1/xinsrv/zookeeper/bin/../src/java/lib/*.jar:/data1/xinsrv/zookeeper/bin/../conf: -Dcom.sun.management.jmxremote -Dcom.sun.management.jmxremote.local.only=false org.apache.zookeeper.server.quorum.QuorumPeerMain /data1/xinsrv/zookeeper/bin/../conf/zoo.cfg
+root     30415  2403  0 11:28 pts/1    00:00:00 grep zookeeper
+
+
+
+```
+
+### 升级glibc
+
+```
+[root@10.70.1.232 home]#vim glibc.sh
+#! /bin/sh
+# update glibc to 2.17 for CentOS 6
+wget http://copr-be.cloud.fedoraproject.org/results/mosquito/myrepo-el6/epel-6-x86_64/glibc-2.17-55.fc20/glibc-2.17-55.el6.x86_64.rpm
+wget http://copr-be.cloud.fedoraproject.org/results/mosquito/myrepo-el6/epel-6-x86_64/glibc-2.17-55.fc20/glibc-common-2.17-55.el6.x86_64.rpm
+wget http://copr-be.cloud.fedoraproject.org/results/mosquito/myrepo-el6/epel-6-x86_64/glibc-2.17-55.fc20/glibc-devel-2.17-55.el6.x86_64.rpm
+wget http://copr-be.cloud.fedoraproject.org/results/mosquito/myrepo-el6/epel-6-x86_64/glibc-2.17-55.fc20/glibc-headers-2.17-55.el6.x86_64.rpm
+sudo rpm -Uvh glibc-2.17-55.el6.x86_64.rpm \
+glibc-common-2.17-55.el6.x86_64.rpm \
+glibc-devel-2.17-55.el6.x86_64.rpm \
+glibc-headers-2.17-55.el6.x86_64.rpm --force --nodeps
+
+//赋予执行权限
+#chmod u+x ./glibc.sh
+//执行
+#./glibc.sh
+
+
+(--force --nodeps) 如果报错 加上 --force --nodeps 即可。
+warning: glibc-2.17-55.el6.x86_64.rpm: Header V3 RSA/SHA1 Signature, key ID 73ec361c: NOKEY
+error: Failed dependencies:
+	glibc-common = 2.12-1.209.el6_9.2 is needed by (installed) glibc-2.12-1.209.el6_9.2.i686
+
+
+
+```
+
+## 参考
+1. [CentOS 6.x 如何升级 glibc 2.17](http://movingon.cn/2017/05/05/CentOS-6-x-如何升级-glibc-2-17/)
+2. [分享Centos6.5升级glibc过程](https://cnodejs.org/topic/56dc21f1502596633dc2c3dc)
+3. [使用源代码将 Glibc 升级到 2.6](https://www.ibm.com/developerworks/cn/linux/l-cn-glibc-upd/index.html)
