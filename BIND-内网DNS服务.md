@@ -1,4 +1,6 @@
 # BIND-内网DNS服务
+伯克利互联网名称服务 (Berkeley Internet Name Daemon，简称 BIND) 是 DNS 协议的一个参考实现。
+
 ## 安装
 ### install bind on mac
 ```
