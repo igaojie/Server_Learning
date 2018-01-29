@@ -567,8 +567,22 @@ Curator
 
 ## PHP_SWOOLE安装
 ```
+1. Mac OS php56 安装swoole扩展
 brew info homebrew/php/php56-zookeeper
 
+2. Centos php56 安装Swoole扩展
+[root@10.70.1.232 home]# wget https://pecl.php.net/get/zookeeper-0.4.0.tgz
+
+[root@10.70.1.232 home]#tar zxvf zookeeper-0.4.0.tgz
+
+#cd zookeeper-0.4.0
+/data1/xinsrv/php/bin/phpize
+./configure -–with-php-config=xxxx/php-config
+#make && make install
+#php --ini
+extension=zookeeper.so
+
+/etc/init.d/php-fpm restart即可。
 ```
 
 ### 场景分析
